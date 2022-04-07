@@ -5,14 +5,12 @@ from EQL_div.inputs_needed import inputs_needed
 
 
 class EQL_div_network(keras.Model):
-    def __init__(self, funcs, l1_reg=0., l0_thresh=0., penalty_strength=1., eval_bound=10., expected_param_range=3.,
-                 *args, **kwargs):
+    def __init__(self, funcs, l1_reg=0., l0_thresh=0., penalty_strength=1., eval_bound=10., *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.funcs = funcs  # function types (list of lists of strings)
         self.penalty_strength = tf.constant(penalty_strength)  # strength of the reg_div penalty term
         self.l1_reg = tf.Variable(l1_reg, trainable=False)  # L1-regularization strength (\lambda in paper)
         self.l0_thresh = tf.Variable(l0_thresh, trainable=False)  # L0-threshold
-        self.expected_param_range = expected_param_range  # expected range for prefactors (e.g. frequency of sin)
         self.nr_layers = len(funcs)  # number of EQL_div layers
 
         # store the number of dense nodes in each layer
@@ -77,24 +75,14 @@ class EQL_div_network(keras.Model):
 
         # first layer is special
         self.w.append(self.add_weight(shape=(input_shape[-1], self.dense_nodes[0]),
-                                      initializer=tf.keras.initializers.RandomUniform(minval=-self.expected_param_range,
-                                                                                      maxval=self.expected_param_range),
                                       trainable=True))
         self.b.append(self.add_weight(shape=(self.dense_nodes[0],),
-                                      initializer=tf.keras.initializers.RandomUniform(minval=-self.expected_param_range,
-                                                                                      maxval=self.expected_param_range),
                                       trainable=True))
 
         for i in range(1, self.nr_layers):
             self.w.append(self.add_weight(shape=(len(self.funcs[i - 1]), self.dense_nodes[i]),
-                                          initializer=tf.keras.initializers.RandomUniform(
-                                              minval=-self.expected_param_range,
-                                              maxval=self.expected_param_range),
                                           trainable=True))
             self.b.append(self.add_weight(shape=(self.dense_nodes[i],),
-                                          initializer=tf.keras.initializers.RandomUniform(
-                                              minval=-self.expected_param_range,
-                                              maxval=self.expected_param_range),
                                           trainable=True))
 
     def compute_loss(self, x=None, y=None, y_pred=None, sample_weight=None):
