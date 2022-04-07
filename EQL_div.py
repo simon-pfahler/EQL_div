@@ -77,14 +77,24 @@ class EQL_div_network(keras.Model):
 
         # first layer is special
         self.w.append(self.add_weight(shape=(input_shape[-1], self.dense_nodes[0]),
+                                      initializer=tf.keras.initializers.RandomUniform(minval=-self.expected_param_range,
+                                                                                      maxval=self.expected_param_range),
                                       trainable=True))
         self.b.append(self.add_weight(shape=(self.dense_nodes[0],),
+                                      initializer=tf.keras.initializers.RandomUniform(minval=-self.expected_param_range,
+                                                                                      maxval=self.expected_param_range),
                                       trainable=True))
 
         for i in range(1, self.nr_layers):
             self.w.append(self.add_weight(shape=(len(self.funcs[i - 1]), self.dense_nodes[i]),
+                                          initializer=tf.keras.initializers.RandomUniform(
+                                              minval=-self.expected_param_range,
+                                              maxval=self.expected_param_range),
                                           trainable=True))
             self.b.append(self.add_weight(shape=(self.dense_nodes[i],),
+                                          initializer=tf.keras.initializers.RandomUniform(
+                                              minval=-self.expected_param_range,
+                                              maxval=self.expected_param_range),
                                           trainable=True))
 
     def compute_loss(self, x=None, y=None, y_pred=None, sample_weight=None):
