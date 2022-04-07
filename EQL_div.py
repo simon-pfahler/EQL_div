@@ -64,6 +64,11 @@ class EQL_div_network(keras.Model):
         # add the reg_div penalty term (in both cases of penalty epoch and normal training epoch)
         self.add_loss(self.penalty_strength * tf.reduce_sum((1. - mask) * (div_thresh - denominator)))
 
+        # add another loss that tries to keep denominators away from 0 (above 0.1)
+        min_denom = 0.1
+        mask = tf.cast(denominator > min_denom, dtype=tf.float32)
+        self.add_loss(10*self.l1_reg * tf.reduce_sum((1. - mask) * (div_thresh - denominator)))
+
         return output
 
     def build(self, input_shape):

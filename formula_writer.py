@@ -45,7 +45,7 @@ def get_formulas(weights, funcs, symbols=None, simplify=False):
                     # if curr_weight is positive, but there is already another factor in front, insert a "+"
                     dense_formulas[i] += '+'
                     brackets_needed = True
-                dense_formulas[i] += "{}*{}".format(curr_weight, prev_formulas[j])
+                dense_formulas[i] += "{:.2f}*{}".format(curr_weight, prev_formulas[j])
 
             # bias
             curr_bias = b[curr_layer][i]
@@ -56,7 +56,7 @@ def get_formulas(weights, funcs, symbols=None, simplify=False):
                     # if curr_bias is positive, but there is already another factor in front, insert a "+"
                     dense_formulas[i] += "+"
                     brackets_needed = True
-                dense_formulas[i] += "{}".format(curr_bias)
+                dense_formulas[i] += "{:.2f}".format(curr_bias)
 
             # put brackets if we need them
             if brackets_needed:
