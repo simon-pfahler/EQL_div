@@ -17,8 +17,6 @@ def get_formulas(weights, funcs, symbols=None, simplify=False):
 
     # prev_formulas always stores the formulas of the previous layer
     prev_formulas = ["x_{}".format(i) for i in range(w[0].shape[0])]
-    if symbols is not None and len(prev_formulas) == len(symbols):
-        prev_formulas = symbols
 
     for curr_layer in range(nr_layers):
 
@@ -113,5 +111,10 @@ def get_formulas(weights, funcs, symbols=None, simplify=False):
     if simplify:
         for i in range(len(formulas)):
             formulas[i] = str(sp.sympify(formulas[i]).evalf(2))
+
+    if symbols is not None and w[0].shape[0] == len(symbols):
+        for s in range(len(symbols)):
+            for i in range(len(formulas)):
+                formulas[i] = formulas[i].replace("x_{}".format(s), symbols[s])
 
     return formulas
