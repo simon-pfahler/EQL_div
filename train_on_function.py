@@ -60,7 +60,7 @@ def train(input_length, funcs, target_fn, T, t_1, t_2, batchsize, train_low, tra
                                                                                               i - t_begin,
                                                                                               t_end - t_begin))
                     # write new formula
-                    formulas = get_formulas(model.trainable_weights, funcs, simplify=True)
+                    formulas = get_formulas(model.trainable_weights, funcs, simplify=False)
                     for j in range(output_length):
                         formulas[j] = "f_{} = ".format(j) + formulas[j] + "\n"
                         print(formulas[j])
