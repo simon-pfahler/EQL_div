@@ -31,6 +31,7 @@ class EQL_div_network(keras.Model):
                           'cos': tf.cos,
                           'prod': tf.multiply,
                           'square': tf.square,
+                          'sqrt': self.reg_sqrt,
                           'div': self.reg_div}
 
     def set_l1_reg(self, l1_reg):
@@ -68,6 +69,19 @@ class EQL_div_network(keras.Model):
         min_denom = 0.1
         mask = tf.cast(denominator > min_denom, dtype=tf.float32)
         self.add_loss(10*self.l1_reg * tf.reduce_sum((1. - mask) * (div_thresh - denominator)))
+
+        return output
+
+    def reg_sqrt(self, nr):
+        # perfom the regularized square root and add the penalty term to the losses
+
+        # allow only positive inputs
+        mask = tf.cast(nr > 0, dtype=tf.float32)
+        # calculate the output
+        output = mask * tf.math.sqrt(tf.math.abs(nr))
+
+        # add the reg_div penalty term (in both cases of penalty epoch and normal training epoch)
+        self.add_loss(self.penalty_strength * tf.reduce_sum((mask-1.) * nr))
 
         return output
 

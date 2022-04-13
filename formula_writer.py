@@ -87,6 +87,11 @@ def get_formulas(weights, funcs, symbols=None, simplify=False):
                     final_formulas[i] = '0.'
                 else:
                     final_formulas[i] = "({})**2".format(dense_formulas[at_node])
+            elif curr_func == 'sqrt':
+                if dense_formulas[at_node] in {'0.', '-0.'}:
+                    final_formulas[i] = '0.'
+                else:
+                    final_formulas[i] = "sqrt({})".format(dense_formulas[at_node])
             elif curr_func == 'prod':
                 if dense_formulas[at_node] in {'0.', '-0.'} or dense_formulas[at_node + 1] in {'0.', '-0.'}:
                     final_formulas[i] = '0.'
