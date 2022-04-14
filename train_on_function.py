@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from EQL_div.EQL_div import EQL_div_network
 from EQL_div.inputs_needed import inputs_needed
 from EQL_div.formula_writer import get_formulas
+from EQL_div.model_selection import non_zeros
 
 
 def train(input_length, funcs, target_fn, T, t_1, t_2, batchsize, train_low, train_high, eval_low, eval_high,
@@ -64,6 +65,11 @@ def train(input_length, funcs, target_fn, T, t_1, t_2, batchsize, train_low, tra
                     for j in range(output_length):
                         formulas[j] = "f_{} = ".format(j) + formulas[j] + "\n"
                         print(formulas[j])
+                else:
+                    if i >= 50:
+                        non_zero_weights = non_zeros(model.trainable_weights)
+                        pbar.set_postfix_str("mse = {}, non-zero: {}".format(np.mean(costs[i - 50:i]),
+                                                                             non_zero_weights))
 
                 if plot_prelim:
                     # plot graphs
