@@ -8,16 +8,17 @@ class EQL_div_network(keras.Model):
     def __init__(self, funcs, l1_reg=0., l0_thresh=0., penalty_strength=1., eval_bound=10., *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.funcs = funcs  # function types (list of lists of strings)
-        self.penalty_strength = tf.constant(penalty_strength)  # strength of the reg_div penalty term
-        self.l1_reg = tf.Variable(l1_reg, trainable=False)  # L1-regularization strength (\lambda in paper)
-        self.l0_thresh = tf.Variable(l0_thresh, trainable=False)  # L0-threshold
+        self.penalty_strength = tf.constant(penalty_strength, dtype=tf.float64)  # strength of the reg_div penalty term
+        # L1-regularization strength (\lambda in paper)
+        self.l1_reg = tf.Variable(l1_reg, trainable=False, dtype=tf.float64)
+        self.l0_thresh = tf.Variable(l0_thresh, trainable=False, dtype=tf.float64)  # L0-threshold
         self.nr_layers = len(funcs)  # number of EQL_div layers
 
         # store the number of dense nodes in each layer
         self.dense_nodes = [sum(inputs_needed(func) for func in funcs[i]) for i in range(self.nr_layers)]
 
         # store the step we're at (the number of times call() was called with training=True)
-        self.step = tf.Variable(0., trainable=False)
+        self.step = tf.Variable(0., trainable=False, dtype=tf.float64)
 
         # switch to indicate if we're in a training or a penalty epoch (0.0 is off, 1.0 is on)
         self.penalty_epoch = tf.Variable(0.0, trainable=False)
@@ -58,7 +59,7 @@ class EQL_div_network(keras.Model):
         # get the current division threshold \theta(t)
         div_thresh = 0.01 / tf.sqrt(self.step + 1)
         # 1. if normal division needed, 0. if regularization in effect
-        mask = tf.cast(denominator > div_thresh, dtype=tf.float32)
+        mask = tf.cast(denominator > div_thresh, dtype=tf.float64)
         # calculate the output
         output = mask * numerator * tf.math.reciprocal(tf.abs(denominator) + 1e-10)
 
@@ -67,7 +68,7 @@ class EQL_div_network(keras.Model):
 
         # add another loss that tries to keep denominators away from 0 (above 0.1)
         min_denom = 0.1
-        mask = tf.cast(denominator > min_denom, dtype=tf.float32)
+        mask = tf.cast(denominator > min_denom, dtype=tf.float64)
         self.add_loss(10*self.l1_reg * tf.reduce_sum((1. - mask) * (div_thresh - denominator)))
 
         return output
@@ -76,7 +77,7 @@ class EQL_div_network(keras.Model):
         # perfom the regularized square root and add the penalty term to the losses
 
         # allow only positive inputs
-        mask = tf.cast(nr > 0, dtype=tf.float32)
+        mask = tf.cast(nr > 0, dtype=tf.float64)
         # calculate the output
         output = mask * tf.math.sqrt(tf.math.abs(nr))
 
@@ -94,17 +95,19 @@ class EQL_div_network(keras.Model):
 
         # first layer is special
         self.w.append(self.add_weight(shape=(input_shape[-1], self.dense_nodes[0]),
-                                      trainable=True))
+                                      trainable=True, dtype=tf.float64))
         self.b.append(self.add_weight(shape=(self.dense_nodes[0],),
-                                      trainable=True))
+                                      trainable=True, dtype=tf.float64))
 
         for i in range(1, self.nr_layers):
             self.w.append(self.add_weight(shape=(len(self.funcs[i - 1]), self.dense_nodes[i]),
-                                          trainable=True))
+                                          trainable=True, dtype=tf.float64))
             self.b.append(self.add_weight(shape=(self.dense_nodes[i],),
-                                          trainable=True))
+                                          trainable=True, dtype=tf.float64))
 
     def compute_loss(self, x=None, y=None, y_pred=None, sample_weight=None):
+        # we don't need x
+        del x
         # get the mse (training epoch) or penalty epoch term into the loss
         loss = tf.cond(tf.math.equal(self.penalty_epoch, 0.0),
                        lambda: self.compiled_loss(y, y_pred, sample_weight, regularization_losses=self.losses),
@@ -143,7 +146,7 @@ class EQL_div_network(keras.Model):
         if training:
             self.step.assign_add(1.)
 
-        outputs = inputs
+        outputs = tf.cast(inputs, dtype=tf.float64)
         # go through all the layers, compute the result, and get the L1-regularization losses
         for i in range(self.nr_layers):
             # apply the dense layer
