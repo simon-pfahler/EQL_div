@@ -13,8 +13,7 @@ from EQL_div.model_selection import non_zeros
 
 
 def train(input_length, funcs, target_fn, T, t_1, t_2, batchsize, train_low, train_high, eval_low, eval_high,
-          l1_reg, l0_threshold, penalty_strength, eval_bound, expected_param_range=3., formula_info=False,
-          plot_prelim=False):
+          l1_reg, l0_threshold, penalty_strength, eval_bound, formula_info=False, plot_prelim=False):
     # trains for all three phases, using the given parameters
     # returns the trained model and a list of losses after each training step
 
@@ -115,7 +114,7 @@ def train(input_length, funcs, target_fn, T, t_1, t_2, batchsize, train_low, tra
         plt.pause(.001)
 
     # phase 1 training
-    model = EQL_div_network(funcs, 0., 0., penalty_strength, eval_bound, expected_param_range)
+    model = EQL_div_network(funcs, 0., 0., penalty_strength, eval_bound)
     model.compile(optimizer='adam', loss='mse', metrics=['mse'])
     # make sure the weights and biases are already created
     model.predict(np.zeros((1, input_length)))
