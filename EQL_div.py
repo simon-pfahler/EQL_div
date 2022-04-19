@@ -5,13 +5,15 @@ from EQL_div.inputs_needed import inputs_needed
 
 
 class EQL_div_network(keras.Model):
-    def __init__(self, funcs, l1_reg=0., l0_thresh=0., penalty_strength=1., eval_bound=10., *args, **kwargs):
+    def __init__(self, funcs, l1_reg=0., l0_thresh=0., penalty_strength=1., eval_bound=10., init_stddev=0.1,
+                 *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.funcs = funcs  # function types (list of lists of strings)
         self.penalty_strength = tf.constant(penalty_strength, dtype=tf.float64)  # strength of the reg_div penalty term
         # L1-regularization strength (\lambda in paper)
         self.l1_reg = tf.Variable(l1_reg, trainable=False, dtype=tf.float64)
         self.l0_thresh = tf.Variable(l0_thresh, trainable=False, dtype=tf.float64)  # L0-threshold
+        self.init_scale = init_stddev # stddev for RandomNormal initializer
         self.nr_layers = len(funcs)  # number of EQL_div layers
 
         # store the number of dense nodes in each layer
@@ -95,22 +97,32 @@ class EQL_div_network(keras.Model):
 
         # first layer is special
         self.w.append(self.add_weight(shape=(input_shape[-1], self.dense_nodes[0]),
-                                      trainable=True, dtype=tf.float64))
+                                      trainable=True, dtype=tf.float64,
+                                      initializer=tf.keras.initializers.RandomNormal(stddev=self.init_stddev)))
         self.b.append(self.add_weight(shape=(self.dense_nodes[0],),
-                                      trainable=True, dtype=tf.float64))
+                                      trainable=True, dtype=tf.float64,
+                                      initializer=tf.keras.initializers.RandomNormal(stddev=self.init_stddev)))
 
         for i in range(1, self.nr_layers):
             self.w.append(self.add_weight(shape=(len(self.funcs[i - 1]), self.dense_nodes[i]),
-                                          trainable=True, dtype=tf.float64))
+                                          trainable=True, dtype=tf.float64,
+                                          initializer=tf.keras.initializers.RandomNormal(stddev=self.init_stddev)))
             self.b.append(self.add_weight(shape=(self.dense_nodes[i],),
-                                          trainable=True, dtype=tf.float64))
+                                          trainable=True, dtype=tf.float64,
+                                          initializer=tf.keras.initializers.RandomNormal(stddev=self.init_stddev)))
 
     def compute_loss(self, x=None, y=None, y_pred=None, sample_weight=None):
         # we don't need x
         del x
+
+        def normal_loss(y, y_pred, regularization_losses):
+            res = tf.reduce_mean(tf.math.squared_difference(tf.cast(y, tf.float64), tf.cast(y_pred, dtype=tf.float64)))
+            res = tf.math.log(1. + res)
+            res += tf.reduce_sum(regularization_losses)
+            return res
         # get the mse (training epoch) or penalty epoch term into the loss
         loss = tf.cond(tf.math.equal(self.penalty_epoch, 0.0),
-                       lambda: self.compiled_loss(y, y_pred, sample_weight, regularization_losses=self.losses),
+                       lambda: normal_loss(y, y_pred, self.losses),
                        lambda: self.penalty_strength * tf.reduce_sum(tf.maximum(y_pred - self.eval_bound, 0)
                                                                      + tf.maximum(- y_pred - self.eval_bound, 0)))
         return loss
