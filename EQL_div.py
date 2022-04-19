@@ -13,7 +13,7 @@ class EQL_div_network(keras.Model):
         # L1-regularization strength (\lambda in paper)
         self.l1_reg = tf.Variable(l1_reg, trainable=False, dtype=tf.float64)
         self.l0_thresh = tf.Variable(l0_thresh, trainable=False, dtype=tf.float64)  # L0-threshold
-        self.init_scale = init_stddev # stddev for RandomNormal initializer
+        self.init_stddev = init_stddev # stddev for RandomNormal initializer
         self.nr_layers = len(funcs)  # number of EQL_div layers
 
         # store the number of dense nodes in each layer
