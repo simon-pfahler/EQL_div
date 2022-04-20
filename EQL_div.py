@@ -127,6 +127,20 @@ class EQL_div_network(keras.Model):
                                                                      + tf.maximum(- y_pred - self.eval_bound, 0)))
         return loss
 
+    def enforce_zeros(self):
+        # enforce L0-Norm of all weights
+        for i in range(self.nr_layers):
+            # treat w of current layer
+            zeros_w = tf.cast(tf.abs(self.w[i]) > tf.fill(self.w[i].shape, self.l0_thresh),
+                              dtype=self.w[i].dtype)
+            self.w[i].assign(tf.multiply(self.w[i], zeros_w))
+
+            # treat b of current layer
+            zeros_b = tf.cast(tf.abs(self.b[i]) > tf.fill(self.b[i].shape, self.l0_thresh),
+                              dtype=self.b[i].dtype)
+            self.b[i].assign(tf.multiply(self.b[i], zeros_b))
+        return
+
     def train_step(self, data):
 
         # copy-paste of standard train_step, DO NOT CHANGE
@@ -140,17 +154,7 @@ class EQL_div_network(keras.Model):
         self.optimizer.minimize(loss, self.trainable_variables, tape=tape)
         # end of copy-paste of standard train_step, DO NOT CHANGE
 
-        # enforce L0-Norm of all weights
-        for i in range(self.nr_layers):
-            # treat w of current layer
-            zeros_w = tf.cast(tf.abs(self.w[i]) > tf.fill(self.w[i].shape, self.l0_thresh),
-                              dtype=self.w[i].dtype)
-            self.w[i].assign(tf.multiply(self.w[i], zeros_w))
-
-            # treat b of current layer
-            zeros_b = tf.cast(tf.abs(self.b[i]) > tf.fill(self.b[i].shape, self.l0_thresh),
-                              dtype=self.b[i].dtype)
-            self.b[i].assign(tf.multiply(self.b[i], zeros_b))
+        self.enforce_zeros()
 
         return self.compute_metrics(x, y, y_pred, sample_weight)
 
