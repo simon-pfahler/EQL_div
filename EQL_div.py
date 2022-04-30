@@ -78,8 +78,9 @@ class EQL_div_network(keras.Model):
     def reg_sqrt(self, nr):
         # perfom the regularized square root and add the penalty term to the losses
 
-        # allow only positive inputs
-        mask = tf.cast(nr > 0, dtype=tf.float64)
+        # get the current sqrt threshold
+        sqrt_thresh = 0.01 / tf.sqrt(self.step + 1)
+        mask = tf.cast(nr > sqrt_thresh, dtype=tf.float64)
         # calculate the output
         output = mask * tf.math.sqrt(tf.math.abs(nr))
 
