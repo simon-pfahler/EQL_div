@@ -111,6 +111,23 @@ class EQL_div_network(keras.Model):
                                           trainable=True, dtype=tf.float64,
                                           initializer=tf.keras.initializers.RandomNormal(stddev=self.init_stddev)))
 
+        # initialize denominators to 1
+        for i in range(self.nr_layers):
+            ws = tf.unstack(self.w[i], axis=1)
+            bs = tf.unstack(self.b[i], axis=0)
+
+            at_node = 0
+            for j in range(len(self.funcs[i])):
+                if self.funcs[i][j] == 'div':
+                    ws[at_node+1] = 0. * ws[at_node+1]
+                    bs[at_node+1] = 0. * bs[at_node+1] + 1.
+                if self.funcs[i][j] == 'sqrt':
+                    ws[at_node] = tf.abs(ws[at_node])
+                    bs[at_node] = tf.abs(bs[at_node])
+                at_node += inputs_needed(self.funcs[i][j])
+            self.w[i].assign(tf.stack(ws, axis=1))
+            self.b[i].assign(tf.stack(bs, axis=0))
+
     def compute_loss(self, x=None, y=None, y_pred=None, sample_weight=None):
         # we don't need x
         del x
