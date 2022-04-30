@@ -133,16 +133,15 @@ class EQL_div_network(keras.Model):
         # we don't need x
         del x
 
-        def normal_loss(y, y_pred, regularization_losses):
+        def normal_loss(y, y_pred):
             res = tf.reduce_mean(tf.math.squared_difference(tf.cast(y, tf.float64), tf.cast(y_pred, dtype=tf.float64)))
-            res = tf.math.log(1. + res)
-            res += tf.reduce_sum(regularization_losses)
             return res
         # get the mse (training epoch) or penalty epoch term into the loss
         loss = tf.cond(tf.math.equal(self.penalty_epoch, 0.0),
-                       lambda: normal_loss(y, y_pred, self.losses),
+                       lambda: normal_loss(y, y_pred),
                        lambda: self.penalty_strength * tf.reduce_sum(tf.maximum(y_pred - self.eval_bound, 0)
                                                                      + tf.maximum(- y_pred - self.eval_bound, 0)))
+        loss += tf.reduce_sum(self.losses)
         return loss
 
     def enforce_zeros(self):
