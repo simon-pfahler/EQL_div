@@ -56,7 +56,7 @@ class EQL_div_network(keras.Model):
         return
 
     def curr_thresh(self):
-        return 0.01 / tf.sqrt(self.step + 1)
+        return tf.maximum(1. / tf.sqrt(self.step + 1), 0.1)
 
     def reg_div(self, numerator, denominator):
         # perfom the regularized division and add the penalty term to the losses
@@ -64,15 +64,10 @@ class EQL_div_network(keras.Model):
         # 1. if normal division needed, 0. if regularization in effect
         mask = tf.cast(denominator > self.curr_thresh(), dtype=tf.float64)
         # calculate the output
-        output = mask * numerator * tf.math.reciprocal(tf.abs(denominator) + 1e-10)
+        output = mask * tf.math.divide_no_nan(numerator, tf.abs(denominator))
 
         # add the reg_div penalty term (in both cases of penalty epoch and normal training epoch)
-        self.add_loss(self.penalty_strength * tf.reduce_sum((1. - mask) * (self.curr_thresh() - denominator)))
-
-        # add another loss that tries to keep denominators away from 0 (above 0.1)
-        min_denom = 0.1
-        mask = tf.cast(denominator > min_denom, dtype=tf.float64)
-        self.add_loss(10*self.l1_reg * tf.reduce_sum((1. - mask) * (self.curr_thresh() - denominator)))
+        self.add_loss(self.penalty_strength * tf.reduce_sum((1. - mask) * (2. * self.curr_thresh() - denominator)))
 
         return output
 
@@ -80,7 +75,7 @@ class EQL_div_network(keras.Model):
         # perfom the regularized square root and add the penalty term to the losses
 
         # 1. if normal sqrt is needed, 0. if regularization is in effect
-        mask = tf.cast(nr > self.curr_thresh(), dtype=tf.float64)
+        mask = tf.cast(nr > 0., dtype=tf.float64)
         # calculate the output
         output = mask * tf.math.sqrt(tf.math.abs(nr))
 
